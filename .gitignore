@@ -1,0 +1,22 @@
+# API 키 — 절대 커밋 금지
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# PyInstaller 빌드 산출물
+dist/
+build/
+*.spec
+
+# 디버그 로그
+debug_log.txt
+
+# macOS
+.DS_Store
+
+# Streamlit 캐시
+.streamlit/secrets.toml
