@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 st.set_page_config(page_title="AI English Dojo", layout="wide")
 
 load_dotenv()
-API_KEY = os.getenv("OPENAI_API_KEY")
+API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
 BUILD_ID = "2026-02-04-v17.10-syntax-fix-final"
 SERVER_PORT = 8016 
 
@@ -1125,7 +1125,7 @@ class RealtimeRequestHandler(http.server.SimpleHTTPRequestHandler):
                 length = int(self.headers['Content-Length'])
                 data = json.loads(self.rfile.read(length).decode('utf-8'))
                 
-                api_key = os.getenv("OPENAI_API_KEY")
+                api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", ""))
                 settings = data.get("settings", {})
                 
                 # target_speed를 settings에서 가져옴 (컨트롤 타워에서 전달됨)
