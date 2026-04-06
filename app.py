@@ -684,7 +684,9 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
                           if(window.updateStatus) window.updateStatus({ firing: false, hit: true });
                           
                           if(dc && dc.readyState === 'open') {
-                              dc.send(JSON.stringify({type: "input_audio_buffer.commit"}));
+                              // [WebRTC FIX] Do NOT send input_audio_buffer.commit in WebRTC mode.
+                              // commit is for WebSocket (input_audio_buffer.append) mode only.
+                              // In WebRTC, audio flows via audio track — just send response.create directly.
                               const isCorrection = SETTINGS.mode === "교정 후 대답해주기";
                               const createMsg = {type: "response.create"};
                               if (isCorrection) {
@@ -692,6 +694,7 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
                                       instructions: "MANDATORY: Say 'Correction.' first and correct the user's sentence (even if they asked a question), THEN say 'Response.' and give your answer. NEVER skip the correction step."
                                   };
                               }
+                              console.log("%c[MISSILE] 📡 Sending response.create (no commit — WebRTC mode)", "color: #00ffcc; font-weight: bold");
                               dc.send(JSON.stringify(createMsg));
                           }
                           
@@ -909,7 +912,16 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
           
           dc.onmessage = (e) => {
               const ev = JSON.parse(e.data);
-              
+
+              // [DEBUG] Log ALL event types received from OpenAI (helps diagnose missing responses)
+              if (ev.type && !['response.audio.delta','input_audio_buffer.speech_started','input_audio_buffer.speech_stopped'].includes(ev.type)) {
+                  console.log(`%c[OAI EVENT] ${ev.type}`, "color: #aaffaa; font-size: 10px");
+              }
+              // Log any error events prominently
+              if (ev.type === 'error') {
+                  console.error(`%c[OAI ERROR] ${JSON.stringify(ev.error)}`, "color: red; font-weight: bold; background: yellow");
+              }
+
               // 1. VAD START (Speech Started) - SERVER SIDE (Ignored in Missile Mode due to Manual VAD)
               // NOTE: If server VAD is disabled, we won't get this event, which is why Manual VAD is critical.
               // However, if we are in Normal Mode, we use this.
