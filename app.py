@@ -831,6 +831,23 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
 
   window.connectSystem = async function() {
       try {
+          // [iOS FIX] Unlock audio on user gesture (required for iOS Safari autoplay policy)
+          // Must be called directly in user gesture context (before any await)
+          if (SETTINGS.is_missile_mode) {
+              const audioEl = document.getElementById("remoteAudio");
+              if (audioEl) {
+                  audioEl.muted = true;
+                  audioEl.play().then(() => {
+                      audioEl.pause();
+                      audioEl.muted = false;
+                      audioEl.currentTime = 0;
+                      console.log("[iOS] Audio element unlocked for autoplay");
+                  }).catch(() => {
+                      audioEl.muted = false;
+                  });
+              }
+          }
+
           // [NEW] Audio Debug Timer
           if (window.audioDebugTimer) clearInterval(window.audioDebugTimer);
           window.audioDebugTimer = setInterval(() => {
