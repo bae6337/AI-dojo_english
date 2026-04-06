@@ -151,12 +151,20 @@ class PromptManager:
         
         # [MODIFIED] NOISE FILTERING & INSTRUCTIONS
         prompt = "### CRITICAL NOISE FILTERING ###\n"
-        prompt += (
-            "1. IGNORE NOISE: If the user's audio input is short, unclear, or sounds like background noise (breathing, typing, static), IGNORE IT completely.\n"
-            "2. DO NOT HALLUCINATE: Do not invent words if the input is unintelligible.\n"
-            "3. CONFIRMATION: If you are unsure what the user said, ask \"Could you say that again?\" instead of trying to correct it.\n"
-            "4. STRICT CORRECTION: Only correct the user's English if they spoke a clear, complete sentence or phrase.\n\n"
-        )
+        if config.is_missile_mode:
+            prompt += (
+                "1. PROCESS ALL SPEECH: In missile mode, always attempt to process what the user said, even if short.\n"
+                "2. DO NOT HALLUCINATE: Do not invent words not spoken by the user. NEVER add words to their sentence.\n"
+                "3. IF UNCLEAR: If you genuinely could not understand, say exactly: \"Correction. Could you say that again? Response. Keep speaking to deflect the missiles!\"\n"
+                "4. MEANING PRESERVATION (CRITICAL): Only fix grammar/pronunciation. NEVER add, remove, or change the meaning of what the user said.\n\n"
+            )
+        else:
+            prompt += (
+                "1. IGNORE NOISE: If the user's audio input is short, unclear, or sounds like background noise (breathing, typing, static), IGNORE IT completely.\n"
+                "2. DO NOT HALLUCINATE: Do not invent words if the input is unintelligible.\n"
+                "3. CONFIRMATION: If you are unsure what the user said, ask \"Could you say that again?\" instead of trying to correct it.\n"
+                "4. STRICT CORRECTION: Only correct the user's English if they spoke a clear, complete sentence or phrase.\n\n"
+            )
         
         # [NEW] Audio Cutoff Fix
         prompt += "### AUDIO OUTPUT INSTRUCTION ###\n"
@@ -233,16 +241,17 @@ class PromptManager:
             
             return prompt
         
-        # ===== MISSILE MODE: ACCUMULATION INSTRUCTION =====
+        # ===== MISSILE MODE: REAL-TIME AUDIO INSTRUCTION =====
         if config.is_missile_mode:
-            prompt += "### INSTRUCTION: HANDLE FRAGMENTED SPEECH ###\n"
+            prompt += "### MISSILE MODE: REAL-TIME SPEECH CORRECTION ###\n"
             prompt += (
-                "The user is playing a game where they must defend against missiles by speaking continuously.\n"
-                "You will receive user input in multiple fragments (commits) as they pause and resume speaking.\n"
-                "1. Accumulate Context: Do not treat a pause as the end of a thought. Wait for the final trigger.\n"
-                "2. Response Trigger: You will only be asked to respond when the user is \"Hit\".\n"
-                "3. Action: When you finally respond, combine ALL recent speech fragments into one complete sentence.\n"
-                "4. Correction: Provide a correction for the FULL combined sentence.\n\n"
+                "The user is playing an English missile defense game. They speak English to deflect missiles.\n"
+                "TECHNICAL: Audio streams continuously via WebRTC. There are NO text commits — you hear the user's voice directly.\n"
+                "1. LISTEN: The user speaks, and you receive their voice in real-time via audio stream.\n"
+                "2. TRIGGER: When you receive a response request (missile HIT), respond immediately to what you just heard.\n"
+                "3. CORRECT ONLY WHAT WAS SAID: Fix grammar only. NEVER add, remove, or change words the user did not say.\n"
+                "4. IF UNCLEAR: If you could not understand, say: \"Correction. Could you say that again? Response. Keep speaking to deflect the missiles!\"\n"
+                "5. KEEP IT BRIEF: Missile mode responses should be concise and energetic to match the game pace.\n\n"
             )
 
         # ===== NORMAL & CORRECTION MODES =====
@@ -308,10 +317,11 @@ class PromptManager:
                 "- NEVER jump straight to answering a question without correcting first.\n"
                 "- The order is ALWAYS: Correction → Response. No exceptions.\n\n"
                 "### MEANING PRESERVATION (CRITICAL) ###\n"
-                "1. Preserve the user's original meaning exactly.\n"
-                "2. ONLY fix grammar, word form, word order, or minor naturalness.\n"
-                "3. DO NOT add new facts, locations, or details not said by the user.\n"
-                "4. If the sentence is already correct, repeat it exactly (no paraphrase).\n\n"
+                "1. Preserve the user's original meaning EXACTLY — word for word if already correct.\n"
+                "2. ONLY fix grammar, word form, or word order. Do NOT rephrase.\n"
+                "3. NEVER add words, facts, or details the user did not say. If user said 3 words, your correction uses those same 3 words (corrected).\n"
+                "4. NEVER say 'I can't hear', 'I can't speak', or any phrase that was not in the user's original statement.\n"
+                "5. If the sentence is already correct, repeat it exactly with 'Perfect.' prefix.\n\n"
                 "### 🎤 GREETING & CONVERSATION START ###\n"
                 "When the session starts, GREET the user warmly and introduce the topic.\n"
                 "Example: \"Hi! Let's talk about travel today. Have you been anywhere interesting recently?\"\n"
