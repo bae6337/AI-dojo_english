@@ -611,6 +611,11 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
   let isMissileActive = false;
   let pendingUserItems = [];     // AI 말 중 수집한 사용자 발화 아이템
   let aiSpeaking = false;        // AI 발화 구간 플래그
+
+  // [MISSILE FIX] Track connection time vs. speech time
+  let connectionEstablishedAt = 0;  // timestamp when WebRTC DataChannel opened
+  let lastSpeechEndTime = 0;        // timestamp when user last stopped speaking
+  let postConnectionSpeechMs = 0;   // ms of speech captured AFTER connection
   
   // [IMPORTANT] VAD State for Manual Detection
   let vadState = "SILENCE"; 
@@ -674,6 +679,18 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
               // Missile Mode: commit하지 않음 → 버퍼에 축적, HIT 시 한 번에 commit
               console.log("%c[MISSILE] 📦 Audio buffered (not committed)", "color: #ffc107");
 
+              // [MISSILE FIX] Track post-connection speech duration
+              const now = Date.now();
+              lastSpeechEndTime = now;
+              if (connectionEstablishedAt > 0 && speechStartTime !== null) {
+                  const speechStart = Math.max(speechStartTime, connectionEstablishedAt);
+                  const speechDuration = now - speechStart;
+                  if (speechDuration > 0) {
+                      postConnectionSpeechMs += speechDuration;
+                      console.log(`%c[MISSILE] 🎙️ Post-connection speech: ${postConnectionSpeechMs}ms total`, "color: #ffc107");
+                  }
+              }
+
               console.log("%c[TIMER] ⏳ Wait Timer STARTED (0.5s)", "color: orange");
               missileWaitTimer = setTimeout(() => {
                   missileWaitTimer = null;
@@ -692,8 +709,18 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
                       if (isMissileActive) {
                           console.log("%c[HIT] 💥 Impact! Committing ALL audio & Requesting Response...", "color: #00ff00; background: black; font-weight: bold");
                           if(window.updateStatus) window.updateStatus({ firing: false, hit: true });
-                          
-                          if(dc && dc.readyState === 'open') {
+
+                          // [MISSILE FIX] Check if enough post-connection audio was captured
+                          const MIN_AUDIO_MS = 400; // minimum 400ms of speech after connection
+                          const hasEnoughAudio = postConnectionSpeechMs >= MIN_AUDIO_MS;
+                          console.log(`%c[MISSILE] Audio check: ${postConnectionSpeechMs}ms post-connection (need ${MIN_AUDIO_MS}ms) → ${hasEnoughAudio ? '✅ OK' : '❌ TOO SHORT'}`, "color: #ffc107; font-weight: bold");
+
+                          // Reset counter for next round
+                          postConnectionSpeechMs = 0;
+
+                          if (!hasEnoughAudio) {
+                              console.warn("%c[MISSILE] ⚠️ Not enough audio after connection — skipping response.create to prevent hallucination", "color: red; font-weight: bold; background: yellow");
+                          } else if(dc && dc.readyState === 'open') {
                               // [WebRTC FIX] Do NOT send input_audio_buffer.commit in WebRTC mode.
                               // commit is for WebSocket (input_audio_buffer.append) mode only.
                               // In WebRTC, audio flows via audio track — just send response.create directly.
@@ -907,6 +934,11 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
              window.log("Connected! Session Ready.", "sys");
              console.log("%c[CONNECTION] DataChannel OPEN! Setting status to CONNECTED", "color: green; font-weight: bold");
              if(window.updateStatus) window.updateStatus({conn: "CONNECTED"});
+
+             // [MISSILE FIX] Record connection time; reset post-connection speech counter
+             connectionEstablishedAt = Date.now();
+             postConnectionSpeechMs = 0;
+             console.log(`%c[CONNECTION] connectionEstablishedAt set: ${connectionEstablishedAt}`, "color: #aaffaa; font-size: 10px");
 
              // [MISSILE FIX] Explicitly disable server VAD via session.update
              // The session payload sets turn_detection=None at token creation,
