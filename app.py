@@ -893,7 +893,18 @@ REALTIME_CLIENT_HTML_TEMPLATE = r"""
           dc.onopen = () => {
              window.log("Connected! Session Ready.", "sys");
              console.log("%c[CONNECTION] DataChannel OPEN! Setting status to CONNECTED", "color: green; font-weight: bold");
-             if(window.updateStatus) window.updateStatus({conn: "CONNECTED"}); // 강제 업데이트
+             if(window.updateStatus) window.updateStatus({conn: "CONNECTED"});
+
+             // [MISSILE FIX] Explicitly disable server VAD via session.update
+             // The session payload sets turn_detection=None at token creation,
+             // but we also send session.update here to guarantee it takes effect.
+             if (SETTINGS.is_missile_mode) {
+                 dc.send(JSON.stringify({
+                     type: "session.update",
+                     session: { turn_detection: null }
+                 }));
+                 console.log("%c[MISSILE] Server VAD disabled via session.update", "color: #ff6600; font-weight: bold");
+             }
           };
           
           dc.onmessage = (e) => {
