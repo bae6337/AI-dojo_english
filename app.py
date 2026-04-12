@@ -153,10 +153,10 @@ class PromptManager:
         prompt = "### CRITICAL NOISE FILTERING ###\n"
         if config.is_missile_mode:
             prompt += (
-                "1. PROCESS ALL SPEECH: In missile mode, always attempt to process what the user said, even if short.\n"
-                "2. DO NOT HALLUCINATE: Do not invent words not spoken by the user. NEVER add words to their sentence.\n"
-                "3. IF UNCLEAR: If you genuinely could not understand, say exactly: \"Correction. Could you say that again? Response. Keep speaking to deflect the missiles!\"\n"
-                "4. MEANING PRESERVATION (CRITICAL): Only fix grammar/pronunciation. NEVER add, remove, or change the meaning of what the user said.\n\n"
+                "1. PROCESS ALL SPEECH: Always respond to what the user said.\n"
+                "2. POLISH THE ENGLISH: Transform the user's sentence into sophisticated, natural English. Improve vocabulary and phrasing freely.\n"
+                "3. PRESERVE MEANING: Keep the same core meaning — do not add new facts or topics.\n"
+                "4. IF UNCLEAR: If you genuinely could not understand, say: \"Correction. Could you say that again? Response. Keep speaking to deflect the missiles!\"\n\n"
             )
         else:
             prompt += (
@@ -316,12 +316,24 @@ class PromptManager:
                 "- NEVER skip correction just because the user asked you a question.\n"
                 "- NEVER jump straight to answering a question without correcting first.\n"
                 "- The order is ALWAYS: Correction → Response. No exceptions.\n\n"
-                "### MEANING PRESERVATION (CRITICAL) ###\n"
-                "1. Preserve the user's original meaning EXACTLY — word for word if already correct.\n"
-                "2. ONLY fix grammar, word form, or word order. Do NOT rephrase.\n"
-                "3. NEVER add words, facts, or details the user did not say. If user said 3 words, your correction uses those same 3 words (corrected).\n"
-                "4. NEVER say 'I can't hear', 'I can't speak', or any phrase that was not in the user's original statement.\n"
-                "5. If the sentence is already correct, repeat it exactly with 'Perfect.' prefix.\n\n"
+                "### CORRECTION GOAL: POLISH TO SOPHISTICATED ENGLISH ###\n"
+                "Your job is to transform the user's English into natural, sophisticated, native-level English.\n\n"
+                "WHAT TO FIX (always correct ALL of these):\n"
+                "1. Grammar errors (tense, subject-verb agreement, articles, prepositions)\n"
+                "2. Unnatural phrasing → rewrite to sound like a fluent native speaker\n"
+                "3. Awkward word choices → replace with more natural, sophisticated vocabulary\n"
+                "4. Overly simple sentences → elevate to a more polished style\n"
+                "5. Korean-influenced patterns → restructure to natural English expression\n\n"
+                "MEANING PRESERVATION RULE:\n"
+                "- Keep the same core meaning and intent as the user's original sentence\n"
+                "- You MAY rephrase, reword, or restructure freely to sound more natural\n"
+                "- Do NOT add new facts, topics, or information not implied by what they said\n"
+                "- NEVER fabricate what the user said — if you truly could not hear, say: 'Could you say that again?'\n\n"
+                "EXAMPLES OF GOOD CORRECTION (sophisticated upgrade):\n"
+                "User: \"I go there yesterday.\" → Correction: \"I went there yesterday.\"\n"
+                "User: \"It was very nice.\" → Correction: \"It was quite lovely.\"\n"
+                "User: \"I think this is good way.\" → Correction: \"I think this is a great approach.\"\n"
+                "User: \"Can you tell me how to improving English?\" → Correction: \"Could you tell me how to improve my English?\"\n\n"
                 "### 🎤 GREETING & CONVERSATION START ###\n"
                 "When the session starts, GREET the user warmly and introduce the topic.\n"
                 "Example: \"Hi! Let's talk about travel today. Have you been anywhere interesting recently?\"\n"
@@ -355,16 +367,19 @@ class PromptManager:
             if config.level in [UserLevel.INTERMEDIATE, UserLevel.ADVANCED]:
                 prompt += (
                     "INSTRUCTIONS (Advanced/Intermediate):\n"
-                    "1. [Correction]: ALWAYS echo the corrected (or perfect) sentence in English.\n"
-                    "   - If error exists: Just say the corrected sentence.\n"
-                    "   - If perfect: Say 'Perfect.' then repeat the original sentence.\n"
+                    "1. [Correction]: Say the polished, sophisticated English version.\n"
+                    "   - ALWAYS improve the sentence — make it sound like a fluent native speaker.\n"
+                    "   - Fix grammar AND improve word choice and phrasing.\n"
+                    "   - If the sentence is already perfect: Say 'Perfect.' then repeat it.\n"
+                    "   - Never just repeat the user's sentence unchanged unless it's already flawless.\n"
                 )
             else:
                 prompt += (
                     "INSTRUCTIONS (Beginner):\n"
-                    "1. [Correction]: ALWAYS echo the corrected (or perfect) sentence.\n"
-                    "   - If error exists: Say corrected sentence (you may add brief Korean hint).\n"
-                    "   - If perfect: Say 'Perfect. 완벽해요.' then repeat the original sentence.\n"
+                    "1. [Correction]: Say the improved, natural English version.\n"
+                    "   - Fix grammar and make it sound more natural.\n"
+                    "   - Keep it simple but correct for a beginner level.\n"
+                    "   - If already correct: Say 'Perfect. 완벽해요.' then repeat it.\n"
                 )
 
             # [Response] 파트 디테일 - 질문 강제
